@@ -1,8 +1,6 @@
 /* @flow */
 
 var React = global.React || require('react');
-var ReactDOM = global.ReactDOM || require('react-dom');
-var shallowCompare = global.shallowCompare || require('react-addons-shallow-compare');
 
 require('./utils/establish-polyfills');
 var scaleEnum = require('./utils/scaleEnum');
@@ -79,6 +77,12 @@ var Infinite = React.createClass({
   preservedScrollState: 0,
   loadingSpinnerHeight: 0,
   deprecationWarned: false,
+
+  scrollable: null,
+  topSpacer: null,
+  bottomSpacer: null,
+  smoothScrollingWrapper: null,
+  loadingSpinner: null,
 
   getDefaultProps(): ReactInfiniteProvidedDefaultProps {
     return {
@@ -188,9 +192,8 @@ var Infinite = React.createClass({
     var utilities = {};
     utilities.getLoadingSpinnerHeight = () => {
       var loadingSpinnerHeight = 0;
-      if (this.refs && this.refs.loadingSpinner) {
-        var loadingSpinnerNode = ReactDOM.findDOMNode(this.refs.loadingSpinner);
-        loadingSpinnerHeight = loadingSpinnerNode.offsetHeight || 0;
+      if (this.loadingSpinner) {
+        loadingSpinnerHeight = this.loadingSpinner.offsetHeight || 0;
       }
       return loadingSpinnerHeight;
     };
@@ -212,13 +215,16 @@ var Infinite = React.createClass({
       utilities.subscribeToScrollListener = () => {};
       utilities.unsubscribeFromScrollListener = () => {};
       utilities.nodeScrollListener = this.infiniteHandleScroll;
-      utilities.getScrollTop = () => this.refs && this.refs.scrollable ? this.refs.scrollable.getScrollTop() : 0;
+      utilities.getScrollTop = () => {
+        return this.scrollable ? this.scrollable.scrollTop : 0;
+      };
+
       utilities.setScrollTop = (top) => {
-        if (this.refs && this.refs.scrollable) {
-          this.refs.scrollable.scrollTop(top);
+        if (this.scrollable) {
+          this.scrollable.scrollTop = top;
         }
       };
-      utilities.scrollShouldBeIgnored = event => event.target !== ReactDOM.findDOMNode(this.refs.scrollable).firstChild;
+      utilities.scrollShouldBeIgnored = event => event.target !== this.scrollable;
 
       utilities.buildScrollableStyle = () => {
         return Object.assign({}, {
@@ -334,7 +340,7 @@ var Infinite = React.createClass({
     if (this.utils.scrollShouldBeIgnored(e)) {
       return;
     }
-    this.computedProps.handleScroll(ReactDOM.findDOMNode(this.refs.scrollable));
+    this.computedProps.handleScroll(this.scrollable);
     this.handleScroll(this.utils.getScrollTop());
   },
 
@@ -438,28 +444,28 @@ var Infinite = React.createClass({
 
     var loadingSpinner = this.computedProps.infiniteLoadBeginEdgeOffset === undefined
       ? null
-      : <div ref="loadingSpinner">
+      : <div ref={(c) => { this.loadingSpinner = c; }}>
         {this.state.isInfiniteLoading ? this.computedProps.loadingSpinnerDelegate : null}
       </div>;
 
     // topSpacer and bottomSpacer take up the amount of space that the
     // rendered elements would have taken up otherwise
     return <Scrollbars className={this.computedProps.className}
-                ref="scrollable"
+                       ref={(c) => { this.scrollable = c; }}
                 autoHide
                 style={this.utils.buildScrollableStyle()}
                 onScroll={this.utils.nodeScrollListener}>
       <div
-        ref="smoothScrollingWrapper"
+          ref={(c) => { this.smoothScrollingWrapper = c; }}
         style={infiniteScrollStyles}
       >
         {this.computedProps.skippedChild}
-        <div ref="topSpacer"
+        <div ref={(c) => { this.topSpacer = c; }}
              style={this.buildHeightStyle(topSpacerHeight)}/>
         {this.computedProps.displayBottomUpwards && loadingSpinner}
           {displayables}
         {!this.computedProps.displayBottomUpwards && loadingSpinner}
-        <div ref="bottomSpacer"
+        <div ref={(c) => { this.bottomSpacer = c; }}
              style={this.buildHeightStyle(bottomSpacerHeight)}/>
       </div>
     </Scrollbars>;
