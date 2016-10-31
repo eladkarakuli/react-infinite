@@ -1,6 +1,7 @@
 /* @flow */
 
 var React = global.React || require('react');
+var shallowCompare = global.shallowCompare || require('react-addons-shallow-compare');
 
 require('./utils/establish-polyfills');
 var scaleEnum = require('./utils/scaleEnum');
